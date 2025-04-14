@@ -1,75 +1,45 @@
-import wisp from "wisp-server-node"
-import { createBareServer } from "@tomphttp/bare-server-node"
-import { uvPath } from "@titaniumnetwork-dev/ultraviolet"
-import { epoxyPath } from "@mercuryworkshop/epoxy-transport"
-import { bareModulePath } from "@mercuryworkshop/bare-as-module3"
-import { baremuxPath } from "@mercuryworkshop/bare-mux/node"
-import express from "express";
-import { createServer } from "node:http";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { createBareServer } from "@tomphttp/bare-server-node";
 
-const bare = createBareServer("/bare/")
-const __dirname = join(fileURLToPath(import.meta.url), "..");
-const app = express();
-const publicPath = "public"; // if you renamed your directory to something else other than public
+const bareServer = createBareServer("/bare/");
+app.use(express.static(pubDir));
 
-app.use(express.static(publicPath));
+app.get("/uv/config.js", (req, res) => {
+        res.sendFile(path.join(pubDir, "uv/config.js"));
+});
+
 app.use("/uv/", express.static(uvPath));
 app.use("/epoxy/", express.static(epoxyPath));
+app.use("/libcurl/", express.static(libcurlPath));
 app.use("/baremux/", express.static(baremuxPath));
-app.use("/baremod/", express.static(bareModulePath));
 
 app.use((req, res) => {
-    res.status(404);
-    res.sendFile(join(__dirname, publicPath, "404.html")); // change to your 404 page
+        res.status(404).sendFile(path.join(pubDir, "404.html"));
 });
 
-const server = createServer();
-
-server.on("request", (req, res) => {
-    if (bare.shouldRoute(req)) {
-        bare.routeRequest(req, res);
+server.on("request", async (req, res) => {
+  // Listen for request abort events on the underlying request object
+  req.on("aborted", () => {
+    console.warn("Underlying request aborted:", req.url);
+  });
+  try {
+    if (bareServer.shouldRoute(req)) {
+      bareServer.routeRequest(req, res);
     } else {
-        app(req, res);
+      app(req, res);
     }
-});
-
-server.on("upgrade", (req, socket, head) => {
-    if (req.url.endsWith("/wisp/")) {
-        wisp.routeRequest(req, socket, head);
-    } else if (bare.shouldRoute(req)) {
-        bare.routeUpgrade(req, socket, head);
-    } else {
-        socket.end();
+  } catch (error) {
+    if (error.message && error.message.includes("aborted")) {
+      console.warn("Request aborted by client during processing:", error);
+      return;
     }
+    console.error("Request error:", error);
+    res.statusCode = 500;
+    res.write(String(error));
+    res.end();
+  }
 });
 
-let port = parseInt(process.env.PORT || "");
-
-if (isNaN(port)) port = 8080; // set your port
-
-server.on("listening", () => {
-    const address = server.address();
-    console.log("Listening on:");
-    console.log(`\thttp://localhost:${address.port}`);
-    console.log(
-        `\thttp://${
-            address.family === "IPv6" ? `[${address.address}]` : address.address
-        }:${address.port}`
-    );
-});
-
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-
-function shutdown() {
-    console.log("SIGTERM signal received: closing HTTP server");
-    server.close();
-    bare.close();
-    process.exit(0);
-}
-
-server.listen({
-    port,
+server.listen(port, "0.0.0.0", () => {
+        const address = server.address();
+        console.log(startup_msg)
 });
