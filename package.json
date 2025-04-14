@@ -1,12 +1,16 @@
 {
   "dependencies": {
-    "@titaniumnetwork-dev/ultraviolet": "^3.2.6",
-    "@tomphttp/bare-server-node": "^2.0.3",
-    "wisp-server-node": "^1.1.3",
+    "@mercuryworkshop/bare-as-module3": "^2.2.2",
     "@mercuryworkshop/bare-mux": "^2.0.3",
     "@mercuryworkshop/epoxy-transport": "^2.1.3",
-    "@mercuryworkshop/bare-as-module3": "^2.2.2",
-    "express": "^4.18.2"
+    "@titaniumnetwork-dev/ultraviolet": "^2.0.0",
+    "@tomphttp/bare-server-node": "^2.0.5",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1",
+    "node-static": "^0.7.11",
+    "wisp-server-node": "^1.1.3"
   },
   "type": "module"
 }
+
